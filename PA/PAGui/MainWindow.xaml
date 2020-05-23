@@ -1,0 +1,54 @@
+﻿<Window x:Class="PAGui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:localSource="clr-namespace:PAGui"
+        xmlns:local="clr-namespace:PAGui.Visualizer"
+        mc:Ignorable="d"
+        Title="Pattern Analyser" 
+        Height="650" 
+        Width="1200"
+        MinHeight="600" 
+        MinWidth="1000" 
+        Icon="Graph.ico"
+        WindowStartupLocation="CenterScreen"
+        Name="PAMainWindow" Closing="PAMainWindow_Closing">
+    <Window.CommandBindings>
+        <CommandBinding  
+        Command="{x:Static localSource:MainWindow.VoronoiDiagrammCommand}" 
+        CanExecute="VoronoiDiagramCommandHandler_CanExecute" 
+        Executed="VoronoiDiagramCommandHandler_Executed" />
+        <CommandBinding  
+        Command="{x:Static localSource:MainWindow.DelaunayDiagrammCommand}" 
+        CanExecute="DelaunayDiagramCommandHandler_CanExecute" 
+        Executed="DelaunayDiagramCommandHandler_Executed" />
+    </Window.CommandBindings>
+    <Grid>
+        <Menu VerticalAlignment="Top" Height="18">
+            <MenuItem Header="_Datei">
+                <MenuItem Header="_Datei Öffnen" Command="Open">
+                    <MenuItem.ToolTip>Datei Öffnen</MenuItem.ToolTip>
+                </MenuItem>
+                <MenuItem Header="_Drucken" Command="Print">
+                    <MenuItem.ToolTip>Drucken</MenuItem.ToolTip>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="_Beenden" Command="Close"/>
+            </MenuItem>
+            <MenuItem Header="_Diagramms">
+                <MenuItem Header="_Voronoi Diagramm" Command="{x:Static localSource:MainWindow.VoronoiDiagrammCommand}" >
+                    <MenuItem.ToolTip>Voronoi Diagramm</MenuItem.ToolTip>
+                </MenuItem>
+                <MenuItem Header="_Delaunay Diagramm" Command="{x:Static localSource:MainWindow.DelaunayDiagrammCommand}">
+                    <MenuItem.ToolTip>Delaunay Diagramm</MenuItem.ToolTip>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+        <Grid Margin="0,18,0,0">
+            <local:DotViewer x:Name="MyDotViewer"></local:DotViewer>
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Orientation="Horizontal" Margin ="6">
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
