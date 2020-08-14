@@ -1,4 +1,5 @@
-﻿using PAGui.DataLoader;
+﻿using PADataProcessing.VoronoiToolBox;
+using PAGui.DataLoader;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -26,17 +27,17 @@ namespace PAGui.Visualizer
 
         static GraphLoader()
         {
-            outline = new Pen(Brushes.Blue, 0.05);
+            outline = new Pen(Brushes.Blue, 0.02);
             outline.Freeze();
         }
 
-        public GraphLoader(IEnumerable<Point> Nodes, IEnumerable<Edge> Edges, double [] BoundingBox = null, BitmapFrame Frame = null, double PenSize = 0)
+        public GraphLoader(IEnumerable<Node> Nodes, IEnumerable<Edge> Edges, double [] BoundingBox = null, BitmapFrame Frame = null, double PenSize = 0)
         {
-            outline = new Pen(Brushes.Blue, 0.05 + PenSize);
+            outline = new Pen(Brushes.Blue, 0.02 + (Frame != null ? PenSize : 0));
             outline.Freeze();
             graph = new DrawingVisual();
             
-            LoadGraph(Nodes, Edges, Frame, PenSize, BoundingBox);
+            LoadGraph(Nodes, Edges, Frame, (Frame != null ? PenSize : 0), BoundingBox);
         }
 
         public DrawingVisual Graph
@@ -56,7 +57,7 @@ namespace PAGui.Visualizer
         }
         int edge_count;
 
-        private void LoadGraph(IEnumerable<Point> Nodes, IEnumerable<Edge> Edges, BitmapFrame Frame = null, double PenSize = 0, double [] BoundingBox = null)
+        private void LoadGraph(IEnumerable<Node> Nodes, IEnumerable<Edge> Edges, BitmapFrame Frame = null, double PenSize = 0, double [] BoundingBox = null)
         {
             if (Frame != null)
             {
@@ -109,14 +110,17 @@ namespace PAGui.Visualizer
             }
         }
 
-        private void LoadNode(Point NodePoint, int NodeId)
+        private void LoadNode(Node NodePoint, int NodeId)
         {
-            Brush fill = Brushes.Green;
+            Brush fill = Brushes.Transparent;
+
+            if (Math.Abs(NodePoint.Orientation) >= 0.1)
+                fill = Brushes.Blue;
 
             DrawingVisual visual = new DrawingVisual();
             DrawingContext dc = visual.RenderOpen();
 
-            dc.DrawEllipse(fill, outline, NodePoint, DefaultRadius, DefaultRadius);
+            dc.DrawEllipse(fill, outline, new Point(NodePoint.X, NodePoint.Y), DefaultRadius, DefaultRadius);
 
             dc.Close();
 
@@ -132,10 +136,10 @@ namespace PAGui.Visualizer
             DrawingVisual visual = new DrawingVisual();
             DrawingContext dc = visual.RenderOpen();
 
-            Pen pen = new Pen(Brushes.Red, 0.065 + PenSize);
+            Pen pen = new Pen(Brushes.Red, 0.05 + PenSize);
             Edge edgeCopy = ToBoundingBoxPoint(edge);
-            if (IsInBoundingBox(edgeCopy.A) == 0 && IsInBoundingBox(edgeCopy.B) == 0)
-                dc.DrawLine(pen, edgeCopy.A, edgeCopy.B);
+            if (IsInBoundingBox(new Point(edgeCopy.A.X, edgeCopy.A.Y)) == 0 && IsInBoundingBox(new Point(edgeCopy.B.X, edgeCopy.B.Y)) == 0)
+                dc.DrawLine(pen, new Point(edgeCopy.A.X, edgeCopy.A.Y), new Point(edgeCopy.B.X, edgeCopy.B.Y));
 
             dc.Close();
             visual.SetValue(FrameworkElement.TagProperty, $"Edge_{EdgeId}");
@@ -158,8 +162,8 @@ namespace PAGui.Visualizer
             );
             Edge Result = new Edge 
             { 
-                A = APrim,
-                B = BPrim
+                A = new Node(APrim.X, APrim.Y),
+                B = new Node(BPrim.X, BPrim.Y)
             };
 
             if (BBMinX != -1 && BBMinY != -1 && BBMaxX != -1 && BBMaxY != -1 && Source.A != Source.B)
@@ -170,11 +174,13 @@ namespace PAGui.Visualizer
 
                 if (AInBox > 0 && BInBox == 0)
                 {
-                    Result.A = GetProjection(APrim, BPrim, AInBox);
+                    Point tmp = GetProjection(APrim, BPrim, AInBox);
+                    Result.A = new Node(tmp.X, tmp.Y);
                 }
                 else if (BInBox > 0 && AInBox == 0)
                 {
-                    Result.B = GetProjection(APrim, BPrim, BInBox);
+                    Point tmp = GetProjection(APrim, BPrim, BInBox);
+                    Result.B = new Node(tmp.X, tmp.Y);
                 }
             }
 

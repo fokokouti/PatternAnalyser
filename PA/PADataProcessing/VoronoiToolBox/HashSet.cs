@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PADataProcessing.VoronoiToolBox
 {
 	/// <summary>
-	/// Set für effizienten Zugriff auf Objekte. Objete werden als Key abgelegt, value ist nur ein dummy-Objekt.
+	/// HashSet for efficient access to objects.
 	/// </summary>
 	[Serializable]
 	public class HashSet<T> : IEnumerable<T>, ICollection<T>

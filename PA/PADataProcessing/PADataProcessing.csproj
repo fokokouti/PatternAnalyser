@@ -42,8 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VoronoiToolBox\Edge.cs" />
     <Compile Include="VoronoiToolBox\FortuneVoronoi.cs" />
     <Compile Include="VoronoiToolBox\HashSet.cs" />
+    <Compile Include="VoronoiToolBox\Node.cs" />
     <Compile Include="VoronoiToolBox\PriorityQueue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VoronoiToolBox\ToolBox.cs" />

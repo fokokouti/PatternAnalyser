@@ -1,4 +1,5 @@
-﻿using PAGui.DataLoader;
+﻿using PADataProcessing.VoronoiToolBox;
+using PAGui.DataLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace PAGui.Visualizer
             DotGraph.ToolTipContentProvider = NodeTipContentProvider;
         }
 
-        public void LoadPlain(IEnumerable<Point> Nodes, IEnumerable<Edge> Edges, string FileName, double[] BoundingBox = null, BitmapFrame Frame = null, double PenSize = 0)
+        public void LoadPlain(IEnumerable<Node> Nodes, IEnumerable<Edge> Edges, string FileName, double[] BoundingBox = null, BitmapFrame Frame = null, double PenSize = 0)
         {
             GraphLoader g = new GraphLoader(Nodes, Edges, BoundingBox, Frame, PenSize);
             DotGraph.Graph = g.Graph;

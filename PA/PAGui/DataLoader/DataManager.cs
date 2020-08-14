@@ -16,20 +16,20 @@ namespace PAGui.DataLoader
         public static string ComXLabel = "N_COM_X";
         public static string ComYLabel = "N_COM_Y";
         public static string ComOrientationLabel = "N_Orient";
-        public static double ScaleX = 5000;
-        public static double ScaleY = 5000;
-        public static System.Windows.Point MapVectorToPoint(this Vector Source, double ActualHeigth, bool scaled = false)
+        public static double ScaleX = 10;
+        public static double ScaleY = 10;
+        public static Node MapVectorToPoint(this Vector Source, double ActualHeigth, bool scaled = false)
         {
-            System.Windows.Point Result = new System.Windows.Point();
+            Node Result = new Node();
             if (Source.Dim == 2)
             {
                 if (!scaled)
                 {
-                    Result = new System.Windows.Point(Source[0] / ScaleX, Source[1] / ScaleY);
+                    Result = new Node(Source[0] / ScaleX, Source[1] / ScaleY);
                 }
                 else
                 {
-                    Result = new System.Windows.Point(Source[0], Source[1]);
+                    Result = new Node(Source[0], Source[1]);
                 }
             }
             return Result;
@@ -52,13 +52,15 @@ namespace PAGui.DataLoader
             return Result;
         }
 
-        public static IEnumerable<System.Windows.Point> MapVectorHashSetToPointList(this PADataProcessing.VoronoiToolBox.HashSet<Vector> Source, double ActualHeigth, bool scaled = false)
+        public static IEnumerable<Vector> MapNodeToVector(this IEnumerable<Node> Source)
         {
-            List<System.Windows.Point> Result = new List<System.Windows.Point>();
+            List<Vector> Result = new List<Vector>();
             foreach (var elem in Source)
             {
-                Result.Add(elem.MapVectorToPoint(ActualHeigth, scaled));
+
+                Result.Add(new Vector(elem.X, elem.Y));
             }
+
             return Result;
         }
 
@@ -148,41 +150,97 @@ namespace PAGui.DataLoader
 
                 if (XValue != null && XValue.Length > 1)
                 {
+                    if (XValue.Contains("."))
+                        XValue = XValue.Replace(".", ",");
+
                     double.TryParse(XValue, out X);
                 }
 
                 if (YValue != null && YValue.Length > 1)
                 {
+                    if (YValue.Contains("."))
+                        YValue = YValue.Replace(".", ",");
+
                     double.TryParse(YValue, out Y);
                 }
 
-                Vector VectorElem = new Vector(X, Y);
+                Vector VectorElem = new Vector(X / ScaleX, Y / ScaleY);
                 Result.Add(VectorElem);
             }
 
             return Result;
         }
 
-        public static IEnumerable<System.Windows.Point> ToIEnumerableNodeList(this List<Dictionary<string, string>> Source, ref double[] BoundingBox)
+        public static IEnumerable<Node> ToIEnumerableNodeList(this List<Dictionary<string, string>> Source, ref double[] BoundingBox)
         {
-            List<System.Windows.Point> Result = new List<System.Windows.Point>();
+            List<Node> Result = new List<Node>();
+            string IdValue;
+            string XValue;
+            string YValue;
+            string OValue;
+            double X = 0, Y = 0, O = 0;
+
+            Source[0].TryGetValue(ComXLabel, out XValue);
+            Source[0].TryGetValue(ComYLabel, out YValue);
+
+            BoundingBox[0] = BoundingBox[0] - 5;
+            BoundingBox[1] = BoundingBox[1] - 5;
+            BoundingBox[2] = BoundingBox[2] + 5;
+            BoundingBox[3] = BoundingBox[3] + 5;
+            if (XValue != null && XValue.Length > 1)
+            {
+                if (XValue.Contains("."))
+                    XValue = XValue.Replace(".", ",");
+
+                double.TryParse(XValue, out X);
+            }
+
+            if (YValue != null && YValue.Length > 1)
+            {
+                if (YValue.Contains("."))
+                    YValue = YValue.Replace(".", ",");
+
+                double.TryParse(YValue, out Y);
+            }
+
+            BoundingBox[2] = X / ScaleX;
+            BoundingBox[0] = X / ScaleX;
+            BoundingBox[3] = Y / ScaleY;
+            BoundingBox[1] = Y / ScaleY;
+
             foreach (Dictionary<string, string> elem in Source)
             {
-                string XValue;
-                string YValue;
-                double X = 0, Y = 0;
-
+                elem.TryGetValue(UniqIDLabel, out IdValue);
                 elem.TryGetValue(ComXLabel, out XValue);
                 elem.TryGetValue(ComYLabel, out YValue);
+                elem.TryGetValue(ComOrientationLabel, out OValue);
+                if (IdValue == null)
+                {
+                    IdValue = "";
+                }
 
                 if (XValue != null && XValue.Length > 1)
                 {
+                    if (XValue.Contains("."))
+                        XValue = XValue.Replace(".", ",");
+
                     double.TryParse(XValue, out X);
                 }
 
                 if (YValue != null && YValue.Length > 1)
                 {
+                    if (YValue.Contains("."))
+                        YValue = YValue.Replace(".", ",");
+
                     double.TryParse(YValue, out Y);
+                }
+
+                if (OValue != null && OValue.Length > 1)
+                {
+                    if (OValue.Contains("."))
+                        OValue = OValue.Replace(".", ",");
+
+                    double.TryParse(OValue, out O);
                 }
 
                 if ((X / ScaleX) > BoundingBox[2])
@@ -201,20 +259,18 @@ namespace PAGui.DataLoader
                 {
                     BoundingBox[1] = Y / ScaleY;
                 }
-
-                System.Windows.Point point = new System.Windows.Point(X / ScaleX, Y / ScaleY);
-                Result.Add(point);
+                Result.Add(new Node(IdValue, X / ScaleX, Y / ScaleY, O));
             }
 
-            BoundingBox[0] = BoundingBox[0] - 50;
-            BoundingBox[1] = BoundingBox[1] - 20;
-            BoundingBox[2] = BoundingBox[2] + 50;
-            BoundingBox[3] = BoundingBox[3] + 20;
+            BoundingBox[0] = BoundingBox[0] - 5;
+            BoundingBox[1] = BoundingBox[1] - 5;
+            BoundingBox[2] = BoundingBox[2] + 5;
+            BoundingBox[3] = BoundingBox[3] + 5;
 
             return Result;
         }
 
-        public static Dictionary<string, object> GetOneKeyValues(this List<Dictionary<string, string>> Source, string KeyName = "UniqID_NUCL")
+        public static Dictionary<string, object> GetOneKeyValues(this List<Dictionary<string, string>> Source, string KeyName = "N_Orient")
         {
             Dictionary<string, object> Result = new Dictionary<string, object>();
 

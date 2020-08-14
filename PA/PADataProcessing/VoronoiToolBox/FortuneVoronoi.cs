@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace PADataProcessing.VoronoiToolBox
@@ -9,6 +11,21 @@ namespace PADataProcessing.VoronoiToolBox
 	{
 		public HashSet<Vector> Vertizes = new HashSet<Vector>();
 		public HashSet<VoronoiEdge> Edges = new HashSet<VoronoiEdge>();
+
+		public VoronoiGraph Clone()
+		{
+			VoronoiGraph VClone = new VoronoiGraph();
+			//foreach (Vector V in this.Vertizes)
+			//{
+			//	VClone.Vertizes.Add(V);
+			//}
+			foreach (VoronoiEdge VE in this.Edges)
+			{
+				VClone.Edges.Add(VE);
+			}
+
+			return VClone;
+		}
 	}
 	public class VoronoiEdge
 	{
@@ -101,8 +118,6 @@ namespace PADataProcessing.VoronoiToolBox
 			get { return _Parent; }
 			set { _Parent = value; }
 		}
-
-
 		public void Replace(VNode ChildOld, VNode ChildNew)
 		{
 			if (Left == ChildOld)
@@ -112,7 +127,6 @@ namespace PADataProcessing.VoronoiToolBox
 			else throw new Exception("Child not found!");
 			ChildOld.Parent = null;
 		}
-
 		public static VDataNode FirstDataNode(VNode Root)
 		{
 			VNode C = Root;
@@ -172,7 +186,6 @@ namespace PADataProcessing.VoronoiToolBox
 				C = C.Left;
 			return (VDataNode)C; // Cast statt 'as' damit eine Exception kommt
 		}
-
 		public static VEdgeNode EdgeToRightDataNode(VDataNode Current)
 		{
 			VNode C = Current;
@@ -194,7 +207,6 @@ namespace PADataProcessing.VoronoiToolBox
 			} while (true);
 			return (VEdgeNode)C;
 		}
-
 		public static VDataNode FindDataNode(VNode Root, double ys, double x)
 		{
 			VNode C = Root;
@@ -352,7 +364,6 @@ namespace PADataProcessing.VoronoiToolBox
 				return VC;
 			return null;
 		}
-
 		public static void CleanUpTree(VNode Root)
 		{
 			if (Root is VDataNode)
@@ -647,6 +658,7 @@ namespace PADataProcessing.VoronoiToolBox
 
 			return VG;
 		}
+
 		public static VoronoiGraph FilterVG(VoronoiGraph VG, double minLeftRightDist)
 		{
 			VoronoiGraph VGErg = new VoronoiGraph();
@@ -661,6 +673,145 @@ namespace PADataProcessing.VoronoiToolBox
 				VGErg.Vertizes.Add(VE.VVertexB);
 			}
 			return VGErg;
+		}
+
+		public static VoronoiGraph ErosionVG(VoronoiGraph VGOriginal, VoronoiGraph VGCurrent, ref List<Node> VGVertizes)
+		{
+			VoronoiGraph VGErg = VGCurrent.Clone();
+			List<int> VGErgExclude = new List<int>();
+			List<Node> VGErgNeigbourExclude = new List<Node>();
+			foreach (Node VGVertize in VGVertizes)
+			{
+				if (Math.Abs(VGVertize.Orientation) < 0.1)
+				{
+					Vector vgv = new Vector(VGVertize.X, VGVertize.Y);
+					int i = 0;
+					foreach (VoronoiEdge VE in VGOriginal.Edges)
+					{
+						if (VE.LeftData.Equals(vgv))
+						{
+							VGErg.Edges.Remove(VE);
+							if (!VGErgExclude.Contains(i))
+							{
+								VGErgExclude.Add(i);
+								VGErgNeigbourExclude.Add(new Node("", VE.RightData[0], VE.RightData[1], 0));
+								//break;
+							}
+						}
+						else if (VE.RightData.Equals(vgv))
+						{
+							VGErg.Edges.Remove(VE);
+							if (!VGErgExclude.Contains(i))
+							{
+								VGErgExclude.Add(i);
+								VGErgNeigbourExclude.Add(new Node("", VE.LeftData[0], VE.LeftData[1], 0));
+								//break;
+							}
+						}
+						i++;
+					}
+				}
+			}
+
+			foreach (Node VGVertize in VGVertizes)
+			{
+				if (Math.Abs(VGVertize.Orientation) >= 0.1)
+				{
+					foreach (Node VGVN in VGErgNeigbourExclude)
+					{
+						if (Math.Abs(VGVertize.X - VGVN.X) <= 1e-10 && Math.Abs(VGVertize.Y - VGVN.Y) <= 1e-10)
+						{
+							VGVertize.Orientation = VGVN.Orientation;
+							break;
+						}
+					}
+				}
+			}
+
+			return VGErg;
+		}
+
+		public static VoronoiGraph DilationVG(VoronoiGraph VGOriginal, VoronoiGraph VGCurrent, ref List<Node> VGVertizes)
+		{
+			VoronoiGraph VGErg = VGCurrent.Clone();
+			List<Node> VGVertizesCopy = new List<Node>();
+			foreach (Node node in VGVertizes)
+			{
+				VGVertizesCopy.Add(new Node(node.Id, node.X, node.Y, node.Orientation));
+			}
+
+			if (VGCurrent.Edges.Count < VGOriginal.Edges.Count)
+			{
+				foreach (Node VGVertize in VGVertizes)
+				{
+					if (Math.Abs(VGVertize.Orientation) >= 0.1)
+					{
+						Vector vgv = new Vector(VGVertize.X, VGVertize.Y);
+						foreach (VoronoiEdge VE in VGOriginal.Edges)
+						{
+							if (VE.LeftData.Equals(vgv))
+							{
+								bool EdgeFound = false;
+								foreach (Node VGVertizeCopy in VGVertizesCopy)
+								{
+									if ((Math.Abs(VGVertizeCopy.Orientation) < 0.1 || Math.Abs(VGVertizeCopy.Orientation) >= 0.1) && Math.Abs(VGVertizeCopy.X - VE.RightData[0]) <= 1e-10 && Math.Abs(VGVertizeCopy.Y - VE.RightData[1]) <= 1e-10)
+									{
+										VGVertizeCopy.Orientation = 1;
+										if (!VGErg.Edges.Contains(VE))
+										{
+											VGErg.Edges.Add(VE);
+											EdgeFound = true;
+										}
+										//break;
+									}
+								}
+								if (EdgeFound)
+								{
+									break;
+								}
+							} else if (VE.RightData.Equals(vgv))
+							{
+								bool EdgeFound = false;
+								foreach (Node VGVertizeCopy in VGVertizesCopy)
+								{
+									if ((Math.Abs(VGVertizeCopy.Orientation) < 0.1 || Math.Abs(VGVertizeCopy.Orientation) >= 0.1) && Math.Abs(VGVertizeCopy.X - VE.LeftData[0]) <= 1e-10 && Math.Abs(VGVertizeCopy.Y - VE.LeftData[1]) <= 1e-10)
+									{
+										VGVertizeCopy.Orientation = 1;
+										if (!VGErg.Edges.Contains(VE))
+										{
+											VGErg.Edges.Add(VE);
+											EdgeFound = true;
+										}
+										//break;
+									}
+								}
+								if (EdgeFound)
+								{
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			VGVertizes = VGVertizesCopy;
+
+			return VGErg;
+		}
+
+		public static VoronoiGraph OpeningVG(VoronoiGraph VGOriginal, VoronoiGraph VGCurrent, ref List<Node> VGVertizes)
+		{
+			VoronoiGraph VGErg = ErosionVG(VGOriginal, VGCurrent, ref VGVertizes);
+
+			return DilationVG(VGOriginal, VGErg, ref VGVertizes);
+		}
+
+		public static VoronoiGraph ClosingVG(VoronoiGraph VGOriginal, VoronoiGraph VGCurrent, ref List<Node> VGVertizes)
+		{
+			VoronoiGraph VGErg = DilationVG(VGOriginal, VGCurrent, ref VGVertizes);
+
+			return ErosionVG(VGOriginal, VGErg, ref VGVertizes);
 		}
 	}
 }
